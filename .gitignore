@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.pyo
+*.log
+result*.txt
+regenerate_result.py
+.vscode/
+.idea/
+*.egg-info/
