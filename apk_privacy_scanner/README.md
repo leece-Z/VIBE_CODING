@@ -2,6 +2,46 @@
 
 > 静态分析 Android APK 文件，检测隐私和安全风险
 
+## 版本
+
+| 版本 | 文件 | 说明 |
+|------|------|------|
+| **v2.0（推荐）** | `apk_scanner_gui.py` | GUI 图形界面版，双击运行，浏览器显示 HTML 报告 |
+| v1.0 | `apk_privacy_scanner.py` | 命令行版，终端输出结果 |
+
+## 快速开始
+
+### 安装依赖
+
+```bash
+pip install androguard
+```
+
+### 运行
+
+**Windows 用户**：双击 `启动扫描器.bat` 或 `run_scanner.bat`
+
+**macOS 用户**：双击 `启动扫描器.command`
+
+**命令行用户**：
+
+```bash
+# v2.0 GUI 版（推荐）
+python apk_scanner_gui.py
+
+# v1.0 命令行版
+python apk_privacy_scanner.py your-app.apk
+```
+
+### 使用流程（v2.0 GUI 版）
+
+1. 双击启动脚本 → 自动检查 Python 和依赖
+2. 弹出窗口 → 点击「选择文件」选择 `.apk` 文件
+3. 点击「开始分析」→ 进度条显示分析进度
+4. 分析完成 → 自动在浏览器中打开精美的 HTML 报告
+
+---
+
 ## 功能
 
 7 项自动化检测，覆盖 APK 隐私安全的核心维度：
@@ -15,24 +55,6 @@
 | 5 | **签名信息** | 证书 SHA1、签名者、是否调试证书 |
 | 6 | **敏感API检测** | 获取 IMEI/IMSI/位置/联系人等隐私 API 调用 |
 | 7 | **综合风险评估** | 加权评分 + 风险等级（低/中/较高/高）+ 建议 |
-
-## 快速开始
-
-### 安装依赖
-
-```bash
-pip install androguard
-```
-
-### 运行
-
-```bash
-# 方式 1：直接运行
-python apk_privacy_scanner.py your-app.apk
-
-# 方式 2：使用批处理（Windows）
-run_scanner.bat your-app.apk
-```
 
 ### 示例输出
 
@@ -50,7 +72,7 @@ run_scanner.bat your-app.apk
 ## 技术架构
 
 ```
-apk_privacy_scanner.py
+apk_privacy_scanner.py / apk_scanner_gui.py
 │
 ├── androguard (APK 解析引擎)
 │   ├── APK 解析 → AndroidManifest.xml / DEX / 资源
@@ -112,6 +134,7 @@ apk_privacy_scanner.py
 | 综合风险评分 | ✅ | ❌ | ❌ | ✅ |
 | 中文本地化 | ✅ | 部分 | ✅ | 部分 |
 | 安装复杂度 | 轻量(pip) | 手机安装 | 手机安装 | 较重(Docker) |
+| **GUI 界面** | ✅ v2.0 | ❌ | ✅ | ✅ |
 
 ## License
 
