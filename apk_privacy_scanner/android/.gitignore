@@ -17,5 +17,4 @@ local.properties
 *.log
 
 # APK / build artifacts
-*.apk
 *.aab
