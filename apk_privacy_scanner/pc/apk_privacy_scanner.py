@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Android APK 隐私安全检测工具 (APK Privacy Scanner)
@@ -333,6 +333,7 @@ class APKPrivacyScanner:
         exported = {}
         total_exported = 0
         
+        # 用androguard官方API获取各组件
         for comp_type, getter in [
             ("Activity", self.apk.get_activities),
             ("Service", self.apk.get_services),
@@ -364,6 +365,7 @@ class APKPrivacyScanner:
                         print(f"      - {c}")
                     print(f"      ... 还有 {len(comp_list)-5} 个")
         
+        # 导出组件多意味着攻击面大
         if total_exported > 20:
             self.risk_score += 5
             self.risk_items.append(f"大量声明组件({total_exported}个)")
@@ -376,20 +378,23 @@ class APKPrivacyScanner:
         print("【三、第三方SDK/追踪器分析】")
         print("=" * 60)
         
+        # 方法1: 从DEX类名匹配
         all_classes = set()
         for dex in self.dexes:
             for cls in dex.get_classes():
                 name = str(cls.name).lower()
                 all_classes.add(name)
         
+        # 方法2: 从AndroidManifest XML中提取所有包引用
         try:
             manifest_xml = self.apk.get_android_manifest_xml()
             if manifest_xml:
                 manifest_str = str(manifest_xml).lower()
-                all_classes.add(manifest_str)
+                all_classes.add(manifest_str)  # 整个manifest当做一个大字符串搜索
         except:
             pass
         
+        # 方法3: 从lib目录中的so文件名推断SDK
         try:
             lib_files = self.apk.get_files()
             for f in lib_files:
@@ -399,11 +404,13 @@ class APKPrivacyScanner:
             pass
         
         found_trackers = []
+        # 用包名路径匹配
         for cls_path in all_classes:
             for tracker_key, (tracker_name, level) in KNOWN_TRACKERS.items():
                 if tracker_key.lower() in cls_path:
                     found_trackers.append((tracker_key, tracker_name, level))
         
+        # 去重
         seen = set()
         unique_trackers = []
         for t in found_trackers:
@@ -411,6 +418,7 @@ class APKPrivacyScanner:
                 seen.add(t[0])
                 unique_trackers.append(t)
         
+        # 分类统计
         high_risk = [t for t in unique_trackers if t[2] in ("[HIGH]",)]
         medium_risk = [t for t in unique_trackers if t[2] in ("[MED]",)]
         low_risk = [t for t in unique_trackers if t[2] in ("[LOW]",)]
@@ -455,20 +463,26 @@ class APKPrivacyScanner:
         urls = set()
         ips = set()
         
+        # 从DEX中搜索字符串
         for dex in self.dexes:
             for string in dex.get_strings():
                 s = str(string)
+                # URL
                 for match in re.finditer(r'https?://[a-zA-Z0-9][-a-zA-Z0-9]*\.[^\s"\'<>\[\]]+', s):
                     url = match.group(0)
                     if len(url) < 200:
                         urls.add(url)
+                # IP
                 for match in re.finditer(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', s):
                     ip = match.group(0)
+                    # 过滤明显的非IP
                     parts = ip.split(".")
                     if all(0 <= int(p) <= 255 for p in parts):
+                        # 排除常见非服务器IP
                         if ip not in ("0.0.0.0", "255.255.255.255", "127.0.0.1"):
                             ips.add(ip)
         
+        # 提取域名
         domains = set()
         for url in urls:
             match = re.search(r'https?://([^/:\s]+)', url)
@@ -489,6 +503,7 @@ class APKPrivacyScanner:
             for ip in sorted(ips)[:10]:
                 print(f"    > {ip}")
         
+        # 检测可疑域名
         suspicious_tlds = ['.xyz', '.top', '.tk', '.ml', '.ga', '.cf', '.pw', '.cc', '.club']
         suspicious_domains = [d for d in domains if any(d.endswith(t) for t in suspicious_tlds)]
         if suspicious_domains:
@@ -511,9 +526,11 @@ class APKPrivacyScanner:
         print("=" * 60)
         
         try:
+            # 获取包名
             package = self.apk.get_package()
             print(f"  包名: {package}")
             
+            # 获取证书
             certs = self.apk.get_certificates()
             if certs:
                 for i, cert in enumerate(certs):
@@ -526,11 +543,13 @@ class APKPrivacyScanner:
                         print(f"    主题: {subject}")
                         print(f"    颁发者: {issuer}")
                         
+                        # 检测是否为调试证书
                         if "Android Debug" in subject or "debug" in subject.lower():
                             print(f"    [!] 调试证书!")
                             self.risk_items.append("使用调试证书签名")
                             self.risk_score += 5
                         
+                        # 检测自签名
                         if subject == issuer:
                             print(f"    [i] 自签名证书（常见于非Google Play分发）")
                     except Exception as e:
@@ -650,3 +669,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
